@@ -1,51 +1,63 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+## will need to pip install pipeline and tensorflow
+## this code comes from: https://www.kdnuggets.com/2021/10/simple-question-answering-web-app-hugging-face-pipelines.html
 
 import streamlit as st
-from streamlit.logger import get_logger
+from transformers import pipeline
 
-LOGGER = get_logger(__name__)
+def load_file():
+    """Load text from file"""
+    uploaded_file = st.file_uploader("Upload Files",type=['txt'])
 
-
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
-
-    st.write("# Goodbye! Welcome to Zach's app! 👋")
-
-    st.sidebar.success("Select a demo above.")
-
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+    if uploaded_file is not None:
+        if uploaded_file.type == "text/plain":
+            raw_text = str(uploaded_file.read(),"utf-8")
+        return raw_text
 
 
 if __name__ == "__main__":
-    run()
+
+    # App title and description
+    st.title("Answering questions from text")
+    st.write("Upload text, pose questions, get answers")
+
+    # Load file
+    raw_text = load_file()
+    if raw_text != None and raw_text != '':
+
+        # Display text
+        with st.expander("See text"):
+            st.write(raw_text)
+
+        # Perform question answering
+        question_answerer = pipeline('question-answering')
+
+        answer = ''
+        question = st.text_input('Ask a question')
+
+        if question != '' and raw_text != '':
+            answer = question_answerer({
+                'question': question,
+                'context': raw_text
+            })
+
+        # st.write(answer)
+        def extract_context(raw_text, start, end, additional_chars=10):
+            
+            # Calculate the start and end indices with additional context
+            start_context = max(0, start - additional_chars)
+            end_context = min(len(raw_text), end + additional_chars)
+
+            # Extract the section with additional context
+            return raw_text[start_context:end_context]
+
+        # Example usage
+        start = 600  # start index from QA output
+        end = 611    # end index from QA output
+
+        # Assume raw_text is your text data
+        # raw_text = "Your full text data here..."
+
+        extracted_text = extract_context(raw_text, start, end)
+
+        # Use Streamlit to write the extracted text
+        st.write(extracted_text)
